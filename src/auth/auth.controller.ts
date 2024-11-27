@@ -1,21 +1,15 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto } from 'src/dto/login.dto';
+import { LocalAuthGuard } from './guards/local-auth.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @UseGuards(LocalAuthGuard) // LocalAuthGuard will use LocalStrategy to validate credentials
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    const { email, password } = loginDto;
-    const user = await this.authService.validateUser(email, password);
-
-    if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
-    }
-
-    const token = this.authService.generateJwtToken(user);
-    return { token };
+  async login(@Body() body: { email: string; password: string }) {
+    const user = await this.authService.validateUser(body.email, body.password);
+    return this.authService.login(user);
   }
 }

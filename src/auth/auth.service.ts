@@ -1,48 +1,34 @@
 import { Injectable } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
+import { JwtService } from '@nestjs/jwt';
+import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
-import { ConfigService } from '@nestjs/config';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
-  private readonly privateKey: string;
-  private readonly publicKey: string;
+  constructor(
+    private readonly userService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  constructor(private readonly configService: ConfigService) {
-    this.privateKey = this.configService.get<string>('PRIVATE_KEY');
-    this.publicKey = this.configService.get<string>('PUBLIC_KEY');
+  // Validate the user by email and password
+  async validateUser(email: string, password: string): Promise<LoginDto> {
+    const user = await this.userService.findUserByEmail(email);
+
+    if (
+      user &&
+      (await bcrypt.compare(password, await bcrypt.hash(user.password, 10)))
+    ) {
+      return user;
+    }
+    return null;
   }
 
-  async validateUser(email: string, password: string): Promise<any> {
-    // Replace with your database call
-    const user = {
-      email: 'user@example.com',
-      passwordHash: await bcrypt.hash('password123', 10),
-    }; // Mocked user
-
-    if (!user || user.email !== email) {
-      return null; // User not found or email mismatch
-    }
-    console.log('Email:', email);
-    console.log('Password:', password);
-
-    if (!user) {
-      console.log('User not found');
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordValid) {
-      console.log('Password mismatch');
-    }
-
-    return { id: 1, email: user.email }; // Valid user
-  }
-
-  generateJwtToken(user: any): string {
-    const payload = { sub: user.id, email: user.email };
-    return jwt.sign(payload, this.privateKey, {
-      algorithm: 'RS256',
-      expiresIn: '1h',
-    });
+  // Generate JWT token
+  async login(user: any) {
+    const payload = { email: user.email, sub: user.id };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
   }
 }
