@@ -9,6 +9,8 @@ import { AuthGuard } from './auth/auth.guard';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ClientsModule } from './clients/clients.module';
 import { ReportsModule } from './reports/reports.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -20,8 +22,16 @@ import { ReportsModule } from './reports/reports.module';
     UsersModule,
     ClientsModule,
     ReportsModule,
+
+    ThrottlerModule.forRoot([{
+      ttl: 120000,
+      limit: 100,
+    }]),
   ],
   controllers: [AppController],
-  providers: [AppService, AuthGuard],
+  providers: [AppService, AuthGuard, {
+    provide: APP_GUARD,
+    useClass: ThrottlerGuard
+  }],
 })
-export class AppModule {}
+export class AppModule { }
