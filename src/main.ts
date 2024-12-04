@@ -12,6 +12,15 @@ async function bootstrap() {
       forbidNonWhitelisted: true, // Throw errors for unexpected properties
     }),
   );
+
+  // Enble CORS with options
+  app.enableCors({
+    origin: ['http://localhost:3001'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+  
   await app.listen(3000);
 }
 bootstrap();
